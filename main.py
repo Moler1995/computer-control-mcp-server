@@ -7,41 +7,48 @@ from datetime import datetime
 mcp = FastMCP(name="computer-control-mcp-server", instructions="This is a tool for controlling the computer.")
 
 @mcp.tool()
-def screenshot_save() -> dict:
-    """截取屏幕截图并保存到指定目录，返回保存路径"""
-    # 截取屏幕截图
-    screenshot = pyautogui.screenshot()
-    
-    # 获取当前时间（到小时）
-    current_time = datetime.now()
-    time_str = current_time.strftime("%Y-%m-%d_%H")
-    
-    # 构建保存路径：桌面/one piece/当前时间
-    desktop_path = os.path.expanduser("~/Desktop")
-    save_dir = os.path.join(desktop_path, "one piece", time_str)
-    
-    # 创建目录（如果不存在）
-    os.makedirs(save_dir, exist_ok=True)
-    
-    # 生成文件名（包含分钟和秒）
-    filename = f"screenshot_{current_time.strftime('%Y%m%d_%H%M%S')}.png"
-    file_path = os.path.join(save_dir, filename)
-    
-    # 保存图像到文件
-    screenshot.save(file_path, format='PNG')
-    
-    return {
-        "saved_path": file_path,
-        "saved_directory": save_dir,
-        "filename": filename,
-        "size": screenshot.size,
-        "message": f"截图已保存到 {file_path}"
-    }
-
-@mcp.tool()
 def click(x: int, y: int):
     """点击鼠标左键"""
     pyautogui.click(x, y)
+
+@mcp.tool()
+def right_click(x: int, y: int):
+    """点击鼠标右键
+    
+    参数:
+        x: X坐标
+        y: Y坐标
+    
+    示例:
+        right_click(100, 200)  # 在坐标(100, 200)点击右键
+    """
+    pyautogui.rightClick(x, y)
+    
+    return {
+        "message": f"在坐标({x}, {y})点击了鼠标右键",
+        "position": (x, y),
+        "button": "right"
+    }
+
+@mcp.tool()
+def double_click(x: int, y: int):
+    """双击鼠标左键
+    
+    参数:
+        x: X坐标
+        y: Y坐标
+    
+    示例:
+        double_click(100, 200)  # 在坐标(100, 200)双击左键
+    """
+    pyautogui.doubleClick(x, y)
+    
+    return {
+        "message": f"在坐标({x}, {y})双击了鼠标左键",
+        "position": (x, y),
+        "button": "left",
+        "clicks": 2
+    }
 
 @mcp.tool()
 def type(text: str):
@@ -50,15 +57,32 @@ def type(text: str):
 
 @mcp.tool()
 def press(key: str):
-    """按下单个按键"""
+    """按下单个按键，支持空格,回车,shift,ctrl,alt,tab等
+    
+    参数:
+        key: 按键，如 'space', 'enter', 'shift', 'ctrl', 'alt', 'tab'
+    
+    示例:
+        press('space')  # 按下空格键
+        press('enter')  # 按下回车键
+        press('shift')  # 按下shift键
+        press('ctrl')  # 按下ctrl键
+        press('alt')  # 按下alt键
+        press('tab')  # 按下tab键
+    """
     pyautogui.press(key)
+    
+    return {
+        "message": f"按下了按键: {key}",
+        "key": key
+    }
 
 @mcp.tool()
 def hotkey(keys: list[str]):
     """组合键，支持多个按键同时按下
     
     参数:
-        keys: 按键列表，如 ['ctrl', 'c'] 或 ['cmd', 's']
+        keys: 按键列表，如 ['ctrl', 'c'] 或 ['command', 's']
     
     示例:
         hotkey(['ctrl', 'c'])      # 复制
@@ -66,16 +90,31 @@ def hotkey(keys: list[str]):
         hotkey(['ctrl', 'shift', 'esc'])  # 任务管理器 (Windows)
     """
     pyautogui.hotkey(*keys)
+    
+    return {
+        "message": f"按下了组合键: {keys}",
+        "keys": keys
+    }
 
 @mcp.tool()
 def key_down(key: str):
     """按下按键但不释放"""
     pyautogui.keyDown(key)
+    
+    return {
+        "message": f"按下了按键: {key}",
+        "key": key
+    }
 
 @mcp.tool()
 def key_up(key: str):
     """释放之前按下的按键"""
     pyautogui.keyUp(key)
+    
+    return {
+        "message": f"释放了按键: {key}",
+        "key": key
+    }
 
 @mcp.tool()
 def screenshot_image_data() -> dict:
@@ -105,6 +144,58 @@ def get_mouse_position() -> dict:
     
     return {
         "message": f"当前鼠标位置: ({x}, {y})"
+    }
+
+@mcp.tool()
+def scroll(clicks: int, x: int = None, y: int = None):
+    """滚动鼠标滚轮
+    
+    参数:
+        clicks: 滚动次数，正数向上滚动，负数向下滚动
+        x: 可选的X坐标，如果不指定则使用当前鼠标位置
+        y: 可选的Y坐标，如果不指定则使用当前鼠标位置
+    
+    示例:
+        scroll(3)           # 在当前鼠标位置向上滚动3次
+        scroll(-2)          # 在当前鼠标位置向下滚动2次
+        scroll(1, 100, 200) # 在坐标(100, 200)向上滚动1次
+    """
+    if x is not None and y is not None:
+        # 移动到指定坐标再滚动
+        pyautogui.moveTo(x, y)
+    
+    pyautogui.scroll(clicks)
+    
+    return {
+        "message": f"在位置({pyautogui.position()[0]}, {pyautogui.position()[1]})滚动了{clicks}次",
+        "clicks": clicks,
+        "position": pyautogui.position()
+    }
+
+@mcp.tool()
+def scroll_horizontal(clicks: int, x: int = None, y: int = None):
+    """水平滚动鼠标滚轮（适用于支持水平滚动的设备）
+    
+    参数:
+        clicks: 滚动次数，正数向右滚动，负数向左滚动
+        x: 可选的X坐标，如果不指定则使用当前鼠标位置
+        y: 可选的Y坐标，如果不指定则使用当前鼠标位置
+    
+    示例:
+        scroll_horizontal(2)        # 在当前鼠标位置向右滚动2次
+        scroll_horizontal(-1)       # 在当前鼠标位置向左滚动1次
+        scroll_horizontal(3, 150, 250) # 在坐标(150, 250)向右滚动3次
+    """
+    if x is not None and y is not None:
+        # 移动到指定坐标再滚动
+        pyautogui.moveTo(x, y)
+    
+    pyautogui.hscroll(clicks)
+    
+    return {
+        "message": f"在位置({pyautogui.position()[0]}, {pyautogui.position()[1]})水平滚动{clicks}次",
+        "clicks": clicks,
+        "position": pyautogui.position()
     }
 
 @mcp.tool()
